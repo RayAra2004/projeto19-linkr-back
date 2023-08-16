@@ -1,7 +1,18 @@
 import { db } from '../database/database.connection.js'
 
-export async function editPost(req, res) {
+export async function createPost(req, res){
+    const { user_id } = res.locals;
+    const { url, description} = req.body;
 
+    try{
+        await db.query(`INSERT INTO posts(description, url, "userId") VALUES($1, $2, $3);`, [description, url, user_id])
+        res.sendStatus(201);
+    }catch (err) {
+        res.status(500).send(err.message);
+    }
+}
+
+export async function editPost(req, res) {
     const { id } = req.params;
     const { description, url } = req.body;
 
