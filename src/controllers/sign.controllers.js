@@ -3,11 +3,11 @@ import bcrypt from 'bcrypt'
 import {v4 as uuid } from 'uuid'
 
 export async function createSignUp(req, res) {
-  const { name, email, password, username, picture } = req.body
+  const { email, password, username, picture } = req.body
 
   try {
 
-    if (!nome || !email || !password || !username || !picture) {
+    if (!email || !password || !username || !picture) {
         return res.status(400).send({ mensagem: "Por favor, preencha todos os campos obrigatórios." })
       }
 
@@ -18,7 +18,7 @@ export async function createSignUp(req, res) {
     const hash = bcrypt.hashSync(password, 10)
 
     await db.query(
-      `INSERT INTO  users (name, email, password, username, picture) VALUES ($1, $2, $3, $4, $5);`, [name, email, hash, username, picture]
+      `INSERT INTO  users (email, password, username, picture) VALUES ($1, $2, $3, $4);`, [ email, hash, username, picture]
     )
 
     res.sendStatus(201)
