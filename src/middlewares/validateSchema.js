@@ -1,4 +1,4 @@
-export default function validateSchema(schema) {
+function validateSchema(schema) {
     return (req, res, next) => {
       const validation = schema.validate(req.body, { abortEarly: false });
       if (validation.error) {
@@ -8,3 +8,5 @@ export default function validateSchema(schema) {
       next();
     };
 }
+
+export default validateSchema;
