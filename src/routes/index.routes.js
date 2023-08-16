@@ -7,5 +7,4 @@ const router = Router()
 router.use(routerSign)
 router.use(routerPost)
 
-
 export default router

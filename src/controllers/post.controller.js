@@ -12,8 +12,7 @@ export async function createPost(req, res){
     }
 }
 
-export async function editService(req, res) {
-
+export async function editPost(req, res) {
     const { id } = req.params;
     const { description, url } = req.body;
 
@@ -51,4 +50,43 @@ export async function editService(req, res) {
     } catch (err) {
         res.status(500).send(err.message);
     }
+}
+export async function deletePost(req, res) {
+
+    const { id } = req.params;
+
+    try {
+
+        const { rows: post } = await db.query(`
+
+            SELECT * FROM posts WHERE id=$1
+        
+        `, [id]);
+
+        if (post.length === 0) {
+            return res.sendStatus(404);
+        }
+
+        const { rows: user } = await db.query(`
+
+            SELECT * FROM users WHERE id=$1
+        
+        `, [id]);
+
+        if (user.id !== post.userId) {
+            return res.sendStatus(401);
+        }
+
+        await db.query(`
+
+            DELETE FROM post WHERE id = $1
+
+        `, [id]);
+
+        res.status(204).json({ message: 'Post apagado com sucesso!' })
+
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+
 }
