@@ -6,6 +6,6 @@ import validateSchema from '../middlewares/validateSchema.js'
 const routerSign = Router()
 
 routerSign.post('/sign-up', validateSchema(usersSchemas), createSignUp)
-routerSign.post('/signin', validateSchema(authSchemas), createSignIn)  
+routerSign.post('/', validateSchema(authSchemas), createSignIn)  
 
 export default routerSign 
