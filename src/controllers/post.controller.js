@@ -12,7 +12,6 @@ export async function createPost(req, res){
         res.status(500).send(err.message);
     }
 }
-
 export async function getAllPosts(req, res){
     try{
         const posts = await db.query(`
@@ -45,7 +44,33 @@ export async function getAllPosts(req, res){
         res.status(500).send(err.message);
     }
 }
+export async function getPostsById(req, res) {
 
+    const { id } = req.params;
+
+    try {
+
+        const { rows: userPosts } = await db.query(`
+        
+            SELECT * FROM posts WHERE "userId"=$1
+        
+        `, [id]);
+
+
+        if (!userPosts.length > 0) {
+
+            return res.sendStatus(404);
+        }
+
+        const posts = userPosts.rows
+
+        res.status(200).json(posts);
+
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+
+}
 export async function editPost(req, res) {
     const { id } = req.params;
     const { description, url } = req.body;
