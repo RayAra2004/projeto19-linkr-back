@@ -20,14 +20,14 @@ export async function createPost(req, res) {
 export async function getAllPosts(req, res) {
     try {
         const posts = await db.query(`
-    SELECT posts.id, posts.description, posts.url, users.username, users.picture, COUNT(likes.id) AS likes FROM posts
-    JOIN users ON posts."userId" = users.id 
-    LEFT JOIN likes ON posts.id = likes."postId"
-    GROUP BY
-     posts.id,
-     users.id
-    ORDER BY posts."createdAt" DESC
-    LIMIT 20;
+            SELECT posts.id, posts.description, posts.url, users.username, users.picture, COUNT(likes.id) AS likes FROM posts
+            JOIN users ON posts."userId" = users.id 
+            LEFT JOIN likes ON posts.id = likes."postId"
+            GROUP BY
+            posts.id,
+            users.id
+            ORDER BY posts."createdAt" DESC
+            LIMIT 20;
         `);
 
         let i = 0;

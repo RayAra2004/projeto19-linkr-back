@@ -2,7 +2,8 @@ import { Router } from 'express'
 import postSchema from '../schemas/post.schemas.js';
 import validateSchema from '../middlewares/validateSchema.js';
 import { authSchemas } from '../schemas/user.schemas.js';
-import { deletePost, editPost, createPost, getAllPosts, LikePost, UnlikePost } from '../controllers/post.controller.js'
+import { deletePost, editPost, createPost, getAllPosts, LikePost, UnlikePost, getPostsById } from '../controllers/post.controller.js'
+import { authorizationValidate } from '../middlewares/authorization.js';
 
 const routerPost = Router()
 
