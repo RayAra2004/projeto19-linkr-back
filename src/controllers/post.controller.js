@@ -4,7 +4,7 @@ import urlMetadata from "url-metadata";
 export async function createPost(req, res) {
     const { user_id } = res.locals;
     const { url, description } = req.body;
-
+    
     try {
         await db.query(
             `INSERT INTO posts(description, url, "userId") VALUES($1, $2, $3);`,
@@ -51,6 +51,7 @@ export async function getAllPosts(req, res) {
     res.send(response);
   } catch (err) {
     res.status(500).send(err.message);
+    console.log(err)
   }
 
 }
