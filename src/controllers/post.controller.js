@@ -16,182 +16,186 @@ export async function createPost(req, res) {
     }
 }
 
-
 export async function getAllPosts(req, res) {
-    try {
-        const posts = await db.query(`
-            SELECT posts.id, posts.description, posts.url, users.username, users.picture, COUNT(likes.id) AS likes FROM posts
-            JOIN users ON posts."userId" = users.id 
-            LEFT JOIN likes ON posts.id = likes."postId"
-            GROUP BY
-            posts.id,
-            users.id
-            ORDER BY posts."createdAt" DESC
-            LIMIT 20;
+  try {
+    const posts = await db.query(`
+        SELECT 
+        posts.id, 
+        posts.description, 
+        posts.url, 
+        users.username, 
+        users.picture, 
+        COUNT(likes.id) AS likes, 
+        ARRAY_AGG(liked_by.username) AS "likedUsers"
+      FROM posts
+      JOIN users ON posts."userId" = users.id 
+      LEFT JOIN likes ON posts.id = likes."postId"
+      LEFT JOIN users AS liked_by ON likes."userId" = liked_by.id
+      GROUP BY
+        posts.id,
+        users.id
+      ORDER BY posts."createdAt" DESC
+      LIMIT 20;
         `);
 
-        let i = 0;
-        const response = [];
-        do {
-            const metadados = await urlMetadata(posts.rows[i].url);
+    let i = 0;
+    const response = [];
+    do {
+      const metadados = await urlMetadata(posts.rows[i].url);
 
-            const metadataUrl = {
-                title: metadados.title,
-                url: metadados.url,
-                image: metadados.image,
-                description: metadados.description,
-            };
+      const metadataUrl = {
+        title: metadados.title,
+        url: metadados.url,
+        image: metadados.image,
+        description: metadados.description,
+      };
 
-            const post = { ...posts.rows[i], metadataUrl };
-            response.push(post);
+      const post = { ...posts.rows[i], metadataUrl };
+      response.push(post);
 
-            i++;
-        } while (i < posts.rows.length);
-      
+      i++;
+    } while (i < posts.rows.length);
+
     res.send(response);
   } catch (err) {
     res.status(500).send(err.message);
     console.log(err)
   }
-
 }
 export async function getPostsById(req, res) {
+  const { id } = req.params;
 
-    const { id } = req.params;
-
-    try {
-
-        const { rows: userPosts } = await db.query(`
+  try {
+    const { rows: userPosts } = await db.query(
+      `
         
             SELECT * FROM posts WHERE "userId"=$1
         
-        `, [id]);
+        `,
+      [id]
+    );
 
-
-        if (!userPosts.length > 0) {
-
-            return res.sendStatus(404);
-        }
-
-        const posts = userPosts.rows
-
-        res.status(200).json(posts);
-
-    } catch (err) {
-        res.status(500).send(err.message);
+    if (!userPosts.length > 0) {
+      return res.sendStatus(404);
     }
 
+    const posts = userPosts.rows;
+
+    res.status(200).json(posts);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 }
 export async function editPost(req, res) {
-    const { id } = req.params;
-    const { description, url } = req.body;
+  const { id } = req.params;
+  const { description, url } = req.body;
 
-    try {
-        const { rows: post } = await db.query(
-            `
+  try {
+    const { rows: post } = await db.query(
+      `
             SELECT * FROM post WHERE id = $1
             `,
-            [id]
-        );
+      [id]
+    );
 
-        if (post.length === 0) {
-            return res.sendStatus(404);
-        }
+    if (post.length === 0) {
+      return res.sendStatus(404);
+    }
 
-        await db.query(
-            `
+    await db.query(
+      `
             UPDATE posts
             SET description = $1, url = $2
             WHERE id = $3
             RETURNING *
             `,
-            [description, url, id]
-        );
+      [description, url, id]
+    );
 
-        const updatedPost = {
-            id: post[0].id,
-            description: description,
-            url: url,
-        };
+    const updatedPost = {
+      id: post[0].id,
+      description: description,
+      url: url,
+    };
 
-        res.status(200).json({ message: "Post editado com sucesso!", updatedPost });
-    } catch (err) {
-        res.status(500).send(err.message);
-    }
+    res.status(200).json({ message: "Post editado com sucesso!", updatedPost });
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 }
 export async function deletePost(req, res) {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    try {
-        const { rows: post } = await db.query(
-            `
+  try {
+    const { rows: post } = await db.query(
+      `
 
             SELECT * FROM posts WHERE id=$1
         
         `,
-            [id]
-        );
+      [id]
+    );
 
-        if (post.length === 0) {
-            return res.sendStatus(404);
-        }
+    if (post.length === 0) {
+      return res.sendStatus(404);
+    }
 
-        const { rows: user } = await db.query(
-            `
+    const { rows: user } = await db.query(
+      `
 
             SELECT * FROM users WHERE id=$1
         
         `,
-            [id]
-        );
+      [id]
+    );
 
-        if (user.id !== post.userId) {
-            return res.sendStatus(401);
-        }
+    if (user.id !== post.userId) {
+      return res.sendStatus(401);
+    }
 
-        await db.query(
-            `
+    await db.query(
+      `
 
             DELETE FROM post WHERE id = $1
 
         `,
-            [id]
-        );
+      [id]
+    );
 
-        res.status(204).json({ message: "Post apagado com sucesso!" });
-    } catch (err) {
-        res.status(500).send(err.message);
-    }
+    res.status(204).json({ message: "Post apagado com sucesso!" });
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 }
 
 export async function LikePost(req, res) {
-    const { postId } = req.params;
-    const { user_id } = res.locals;
+  const { postId } = req.params;
+  const { user_id } = res.locals;
 
-    try {
-        await db.query(`INSERT INTO likes ("postId","userId") VALUES ($1, $2);`, [
-            postId,
-            user_id,
-        ]);
+  try {
+    await db.query(`INSERT INTO likes ("postId","userId") VALUES ($1, $2);`, [
+      postId,
+      user_id,
+    ]);
 
-        res.sendStatus(201);
-    } catch (err) {
-        res.status(500).send(err.message);
-    }
+    res.sendStatus(201);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 }
 
 export async function UnlikePost(req, res) {
-    const { postId } = req.params;
-    const { user_id } = res.locals;
+  const { postId } = req.params;
+  const { user_id } = res.locals;
 
-    try {
-        await db.query(`DELETE FROM likes WHERE "postId"=$1 AND "userId"=$2;`, [
-            postId,
-            user_id,
-        ]);
+  try {
+    await db.query(`DELETE FROM likes WHERE "postId"=$1 AND "userId"=$2;`, [
+      postId,
+      user_id,
+    ]);
 
-        res.sendStatus(200);
-    } catch (err) {
-        res.status(500).send(err.message);
-    }
+    res.sendStatus(200);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 }
