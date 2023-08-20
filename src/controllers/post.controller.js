@@ -23,7 +23,8 @@ export async function getAllPosts(req, res) {
         SELECT 
         posts.id, 
         posts.description, 
-        posts.url, 
+        posts.url,
+        posts."userId", 
         users.username, 
         users.picture, 
         COUNT(likes.id) AS likes, 
@@ -66,25 +67,59 @@ export async function getAllPosts(req, res) {
 }
 export async function getPostsById(req, res) {
   const { id } = req.params;
-
+  
+  
   try {
-    const { rows: userPosts } = await db.query(
+    const posts = await db.query(
       `
         
-            SELECT * FROM posts WHERE "userId"=$1
+        SELECT 
+          posts.id, 
+          posts.description, 
+          posts.url, 
+          posts."userId",
+          users.username, 
+          users.picture, 
+          COUNT(likes.id) AS likes, 
+          ARRAY_AGG(liked_by.username) AS "likedUsers"
+        FROM posts
+        JOIN users ON posts."userId" = users.id 
+        LEFT JOIN likes ON posts.id = likes."postId"
+        LEFT JOIN users AS liked_by ON likes."userId" = liked_by.id
+        WHERE posts."userId" = $1
+        GROUP BY
+          posts.id,
+          users.id
+        ORDER BY posts."createdAt" DESC;
         
         `,
       [id]
     );
 
-    if (!userPosts.length > 0) {
-      return res.sendStatus(404);
-    }
+    if(posts.rowCount === 0) return res.send([]);
+    let i = 0;
+    const response = [];
+    do {
+  
+      const metadados = await urlMetadata(posts.rows[i].url);
 
-    const posts = userPosts.rows;
+      const metadataUrl = {
+        title: metadados.title,
+        url: metadados.url,
+        image: metadados.image,
+        description: metadados.description,
+      };
 
-    res.status(200).json(posts);
+      const post = { ...posts.rows[i], metadataUrl };
+      response.push(post);
+
+      i++;
+    } while (i < posts.rows.length);
+
+
+    res.status(200).send(response);
   } catch (err) {
+    console.log(err)
     res.status(500).send(err.message);
   }
 }
