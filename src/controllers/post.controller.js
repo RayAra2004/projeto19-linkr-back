@@ -38,6 +38,7 @@ export async function getAllPosts(req, res) {
       LIMIT 20;
         `);
 
+    if(posts.rowCount === 0) return res.send([]);
     let i = 0;
     const response = [];
     do {
