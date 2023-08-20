@@ -5,6 +5,7 @@ export async function createPost(req, res) {
   const { user_id } = res.locals;
   const { url, description } = req.body;
 
+
   try {
     await db.query(
       `INSERT INTO posts(description, url, "userId") VALUES($1, $2, $3);`,
@@ -122,48 +123,37 @@ export async function editPost(req, res) {
 }
 export async function deletePost(req, res) {
   const { id } = req.params;
+  const { user_id } = res.locals;
 
   try {
     const { rows: post } = await db.query(
       `
-
-            SELECT * FROM posts WHERE id=$1
-        
-        `,
+      SELECT * FROM posts WHERE id = $1
+      `,
       [id]
     );
 
     if (post.length === 0) {
-      return res.sendStatus(404);
+      return res.status(404).json({ message: "Post não encontrado." });
     }
 
-    const { rows: user } = await db.query(
-      `
-
-            SELECT * FROM users WHERE id=$1
-        
-        `,
-      [id]
-    );
-
-    if (user.id !== post.userId) {
-      return res.sendStatus(401);
+    if (post[0].userId !== user_id) {
+      return res.status(401).json({ message: "Não autorizado a excluir este post." });
     }
 
     await db.query(
       `
-
-            DELETE FROM post WHERE id = $1
-
-        `,
+      DELETE FROM posts WHERE id = $1
+      `,
       [id]
     );
 
-    res.status(204).json({ message: "Post apagado com sucesso!" });
+    res.status(200).json({ message: "Post apagado com sucesso!" });
   } catch (err) {
     res.status(500).send(err.message);
   }
 }
+
 
 export async function LikePost(req, res) {
   const { postId } = req.params;
