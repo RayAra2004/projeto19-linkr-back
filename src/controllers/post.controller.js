@@ -88,38 +88,34 @@ export async function getPostsById(req, res) {
 }
 export async function editPost(req, res) {
   const { id } = req.params;
-  const { description, url } = req.body;
+  const { description } = req.body;
+  const { user_id } = res.locals;
 
   try {
-    const { rows: post } = await db.query(
-      `
-            SELECT * FROM post WHERE id = $1
-            `,
-      [id]
-    );
 
-    if (post.length === 0) {
-      return res.sendStatus(404);
-    }
-
-    await db.query(
-      `
+    const updateEdit = await db.query(`
             UPDATE posts
-            SET description = $1, url = $2
-            WHERE id = $3
+            SET description = $1
+            WHERE id = $2 AND "userId" = $3
             RETURNING *
             `,
-      [description, url, id]
+      [description, id, user_id]
     );
 
+    console.log(updateEdit)
+
+    if (updateEdit.rowCount === 0) {
+      return res.sendStatus(401)
+    }
+
     const updatedPost = {
-      id: post[0].id,
-      description: description,
-      url: url,
+      id: updateEdit.rows[0].id,
+      description: description
     };
 
     res.status(200).json({ message: "Post editado com sucesso!", updatedPost });
   } catch (err) {
+    console.log(err);
     res.status(500).send(err.message);
   }
 }
