@@ -55,3 +55,13 @@ export async function createSignIn(req, res) {
   }
 }
 
+export async function getUserByUsername(req, res){
+  const { user } = req.body;
+  try{
+    const users = await db.query(`SELECT id, username, picture FROM users WHERE username LIKE $1 || '%'`, [user])
+    res.send(users.rows)
+  }catch (err) {
+    res.status(500).send(err.message)
+  }
+
+}
