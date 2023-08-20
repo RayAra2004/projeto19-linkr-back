@@ -32,7 +32,7 @@ routerPost.put(
     validateSchema(newPostSchema),
     editPost
 );
-routerPost.delete("/post/delete/:id", validateSchema(authSchemas), deletePost);
+routerPost.delete("/post/delete/:id", authorizationValidate, deletePost);
 routerPost.get("/hashtag/:hashtag", GetTrending);
 
 export default routerPost;
