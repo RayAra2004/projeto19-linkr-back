@@ -1,5 +1,5 @@
-import { db } from "../database/database.connection.js";
 import urlMetadata from "url-metadata";
+import { createPostDB, deletePostDB, editPostDB, getAllPostsDB, getPostById, getPostsByIdUser, likePostDB, trendingDB, unlikePostDb } from "../repositories/post.repository.js";
 
 export async function createPost(req, res) {
   const { user_id } = res.locals;
@@ -7,10 +7,7 @@ export async function createPost(req, res) {
 
 
   try {
-    await db.query(
-      `INSERT INTO posts(description, url, "userId") VALUES($1, $2, $3);`,
-      [description, url, user_id]
-    );
+    await createPostDB(description, url, user_id)
     res.sendStatus(201);
   } catch (err) {
     res.status(500).send(err.message);
@@ -19,26 +16,7 @@ export async function createPost(req, res) {
 
 export async function getAllPosts(req, res) {
   try {
-    const posts = await db.query(`
-        SELECT 
-        posts.id, 
-        posts.description, 
-        posts.url,
-        posts."userId", 
-        users.username, 
-        users.picture, 
-        COUNT(likes.id) AS likes, 
-        ARRAY_AGG(liked_by.username) AS "likedUsers"
-      FROM posts
-      JOIN users ON posts."userId" = users.id 
-      LEFT JOIN likes ON posts.id = likes."postId"
-      LEFT JOIN users AS liked_by ON likes."userId" = liked_by.id
-      GROUP BY
-        posts.id,
-        users.id
-      ORDER BY posts."createdAt" DESC
-      LIMIT 20;
-        `);
+    const posts = await getAllPostsDB();
 
     if(posts.rowCount === 0) return res.send([]);
     let i = 0;
@@ -70,31 +48,7 @@ export async function getPostsById(req, res) {
   
   
   try {
-    const posts = await db.query(
-      `
-        
-        SELECT 
-          posts.id, 
-          posts.description, 
-          posts.url, 
-          posts."userId",
-          users.username, 
-          users.picture, 
-          COUNT(likes.id) AS likes, 
-          ARRAY_AGG(liked_by.username) AS "likedUsers"
-        FROM posts
-        JOIN users ON posts."userId" = users.id 
-        LEFT JOIN likes ON posts.id = likes."postId"
-        LEFT JOIN users AS liked_by ON likes."userId" = liked_by.id
-        WHERE posts."userId" = $1
-        GROUP BY
-          posts.id,
-          users.id
-        ORDER BY posts."createdAt" DESC;
-        
-        `,
-      [id]
-    );
+    const posts = await getPostsByIdUser(id);
 
     if(posts.rowCount === 0) return res.send([]);
     let i = 0;
@@ -130,14 +84,7 @@ export async function editPost(req, res) {
 
   try {
 
-    const updateEdit = await db.query(`
-            UPDATE posts
-            SET description = $1
-            WHERE id = $2 AND "userId" = $3
-            RETURNING *
-            `,
-      [description, id, user_id]
-    );
+    const updateEdit = await editPostDB(description, id, user_id);
 
     console.log(updateEdit)
 
@@ -161,12 +108,7 @@ export async function deletePost(req, res) {
   const { user_id } = res.locals;
 
   try {
-    const { rows: post } = await db.query(
-      `
-      SELECT * FROM posts WHERE id = $1
-      `,
-      [id]
-    );
+    const { rows: post } = await getPostById(id);
 
     if (post.length === 0) {
       return res.status(404).json({ message: "Post não encontrado." });
@@ -176,12 +118,7 @@ export async function deletePost(req, res) {
       return res.status(401).json({ message: "Não autorizado a excluir este post." });
     }
 
-    await db.query(
-      `
-      DELETE FROM posts WHERE id = $1
-      `,
-      [id]
-    );
+    await deletePostDB(id);
 
     res.status(200).json({ message: "Post apagado com sucesso!" });
   } catch (err) {
@@ -195,10 +132,7 @@ export async function LikePost(req, res) {
   const { user_id } = res.locals;
 
   try {
-    await db.query(`INSERT INTO likes ("postId","userId") VALUES ($1, $2);`, [
-      postId,
-      user_id,
-    ]);
+    await likePostDB(postId, user_id);
 
     res.sendStatus(201);
   } catch (err) {
@@ -211,11 +145,8 @@ export async function UnlikePost(req, res) {
   const { user_id } = res.locals;
 
   try {
-    await db.query(`DELETE FROM likes WHERE "postId"=$1 AND "userId"=$2;`, [
-      postId,
-      user_id,
-    ]);
-
+    
+    await unlikePostDb(postId, user_id);
     res.sendStatus(200);
   } catch (err) {
     res.status(500).send(err.message);
@@ -226,27 +157,7 @@ export async function GetTrending(req, res) {
   const { hashtag } = req.params;
 
   try {
-    const trendingPosts = await db.query(
-      `SELECT 
-        posts.id, 
-        posts.description, 
-        posts.url, 
-        users.username, 
-        users.picture, 
-        COUNT(likes.id) AS likes, 
-        ARRAY_AGG(liked_by.username) AS "likedUsers"
-      FROM posts
-      JOIN users ON posts."userId" = users.id 
-      LEFT JOIN likes ON posts.id = likes."postId"
-      LEFT JOIN users AS liked_by ON likes."userId" = liked_by.id
-      WHERE posts.description LIKE $1
-      GROUP BY
-        posts.id,
-        users.id
-      ORDER BY posts."createdAt" DESC
-      LIMIT 20;`,
-      [`%${hashtag}%`]
-    );
+    const trendingPosts = await trendingDB(hashtag);
 
     let i = 0;
     const response = [];
