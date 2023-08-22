@@ -22,7 +22,7 @@ routerPost.post(
     validateSchema(postSchema),
     createPost
 );
-routerPost.get("/posts", getAllPosts);
+routerPost.get("/posts", authorizationValidate, getAllPosts);
 routerPost.get("/posts/:id", authorizationValidate, getPostsById);
 routerPost.post("/posts/:postId/like", authorizationValidate, LikePost);
 routerPost.delete("/posts/:postId/like", authorizationValidate, UnlikePost);

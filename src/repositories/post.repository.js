@@ -7,7 +7,7 @@ export async function createPostDB(description, url, user_id){
     );
 }
 
-export async function getAllPostsDB(){
+export async function getAllPostsDB(id){
     return await db.query(`
         SELECT 
             posts.id, 
@@ -16,18 +16,20 @@ export async function getAllPostsDB(){
             posts."userId", 
             users.username, 
             users.picture, 
-            COUNT(likes.id) AS likes, 
-            ARRAY_AGG(liked_by.username) AS "likedUsers"
+        COUNT(likes.id) AS likes, 
+        ARRAY_AGG(liked_by.username) AS "likedUsers"
         FROM posts
-        JOIN users ON posts."userId" = users.id 
+        INNER JOIN users ON posts."userId" = users.id
+        LEFT JOIN follows ON follows."followedId" = users.id
         LEFT JOIN likes ON posts.id = likes."postId"
         LEFT JOIN users AS liked_by ON likes."userId" = liked_by.id
+        WHERE follows."followerId" = $1 OR posts."userId" = $1
         GROUP BY
             posts.id,
             users.id
         ORDER BY posts."createdAt" DESC
         LIMIT 20;
-    `);
+    `, [id]);
 }
 
 export async function getPostsByIdUser(id){
