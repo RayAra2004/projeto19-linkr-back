@@ -19,3 +19,9 @@ export async function createSession(token, user){
 export async function getUserByUsernameDB(user){
     return await db.query(`SELECT id, username, picture FROM users WHERE username LIKE $1 || '%'`, [user])
 }
+
+export async function getFollower(id){
+    return await db.query(
+        `SELECT * FROM follows WHERE "followerId" = $1;`, [id]
+    );
+}
