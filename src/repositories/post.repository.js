@@ -28,7 +28,7 @@ export async function getAllPostsDB(id){
             posts.id,
             users.id
         ORDER BY posts."createdAt" DESC
-        LIMIT 20;
+        LIMIT 10;
     `, [id]);
 }
 
