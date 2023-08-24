@@ -7,9 +7,43 @@ export async function createPostDB(description, url, user_id) {
   );
 }
 
-export async function getAllPostsDB(id) {
-  return await db.query(
-    `
+export async function getAllPostsDB(id, page){
+    const postsPerPage = 10;
+    const offset = (page - 1) * postsPerPage;
+    const posts = await db.query(`
+        SELECT 
+            posts.id, 
+            posts.description, 
+            posts.url,
+            posts."userId", 
+            users.username, 
+            users.picture, 
+        COUNT(likes.id) AS likes, 
+        ARRAY_AGG(liked_by.username) AS "likedUsers"
+        FROM posts
+        INNER JOIN users ON posts."userId" = users.id
+        LEFT JOIN follows ON follows."followedId" = users.id
+        LEFT JOIN likes ON posts.id = likes."postId"
+        LEFT JOIN users AS liked_by ON likes."userId" = liked_by.id
+        WHERE follows."followerId" = $1 OR posts."userId" = $1
+        GROUP BY
+            posts.id,
+            users.id
+        ORDER BY posts."createdAt" DESC
+        OFFSET $2 LIMIT 10;
+    `, [id, offset]);
+
+    const nextPage = posts.rows.length === postsPerPage ? page + 1 : null;
+
+    return {
+        posts: posts,
+        nextPage: nextPage,
+      };
+}
+
+export async function getAllPostsRefreshDB(id){
+
+    return await db.query(`
         SELECT 
         posts.id, 
         posts.description, 

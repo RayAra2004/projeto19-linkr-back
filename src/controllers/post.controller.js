@@ -1,3 +1,6 @@
+import urlMetadata from "url-metadata";
+import { createPostDB, deletePostDB, editPostDB, getAllPostsDB, getAllPostsRefreshDB, getPostById, getPostsByIdUser, likePostDB, trendingDB, unlikePostDb } from "../repositories/post.repository.js";
+import { getFollower } from "../repositories/user.repository.js";
 import getMetaData from "metadata-scraper";
 import {
   createPostDB,
@@ -10,7 +13,7 @@ import {
   trendingDB,
   unlikePostDb,
 } from "../repositories/post.repository.js";
-import { getFollower } from "../repositories/user.repository.js";
+
 
 export async function createPost(req, res) {
   const { user_id } = res.locals;
@@ -26,11 +29,49 @@ export async function createPost(req, res) {
 
 export async function getAllPosts(req, res) {
   const { user_id } = res.locals;
+  const { page } = req.query;
+
+  console.log(page)
 
   try {
     const isFollower = await getFollower(user_id);
 
-    const posts = await getAllPostsDB(user_id);
+    const resp = await getAllPostsDB(user_id, page);
+
+    if(resp.posts.rowCount === 0) return res.send({response: [], follower: !(isFollower.rowCount === 0)});
+    let i = 0;
+    const response = [];
+    do {
+      const metadados = await urlMetadata(resp.posts.rows[i].url);
+
+      const metadataUrl = {
+        title: metadados.title,
+        url: metadados.url,
+        image: metadados.image,
+        description: metadados.description,
+      };
+
+      const post = { ...resp.posts.rows[i], metadataUrl };
+      response.push(post);
+
+      i++;
+    } while (i < resp.posts.rows.length);
+
+    res.send({response: response, follower: !(isFollower.rowCount === 0)});
+  } catch (err) {
+    res.status(500).send(err.message);
+    console.log(err);
+  }
+}
+
+export async function getAllPostsRefresh(req, res) {
+
+  const { user_id } = res.locals;
+
+  try {
+    const isFollower = await getFollower(user_id);
+
+    const posts = await getAllPostsRefreshDB(user_id);
 
     if (posts.rowCount === 0)
       return res.send({ response: [], follower: !(isFollower.rowCount === 0) });

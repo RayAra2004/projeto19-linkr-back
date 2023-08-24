@@ -11,6 +11,7 @@ import {
     UnlikePost,
     getPostsById,
     GetTrending,
+    getAllPostsRefresh,
 } from "../controllers/post.controller.js";
 import { authorizationValidate } from "../middlewares/authorization.js";
 
@@ -23,6 +24,7 @@ routerPost.post(
     createPost
 );
 routerPost.get("/posts", authorizationValidate, getAllPosts);
+routerPost.get("/posts/refresh", authorizationValidate, getAllPostsRefresh)
 routerPost.get("/posts/:id", authorizationValidate, getPostsById);
 routerPost.post("/posts/:postId/like", authorizationValidate, LikePost);
 routerPost.delete("/posts/:postId/like", authorizationValidate, UnlikePost);
