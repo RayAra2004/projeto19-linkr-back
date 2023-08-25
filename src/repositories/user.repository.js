@@ -25,3 +25,20 @@ export async function getFollower(id){
         `SELECT * FROM follows WHERE "followerId" = $1;`, [id]
     );
 }
+
+export async function isFollowerDB(id_user, id_visited){
+    return await db.query(`SELECT * FROM follows WHERE "followerId" = $1 AND "followedId" = $2;`,
+    [id_user, id_visited]);
+}
+
+export async function followDB(id_user, id_visited){
+    await db.query(`
+        INSERT INTO follows("followedId", "followerId") VALUES($1, $2);   
+    `, [id_visited, id_user]);
+}
+
+export async function unfollowDB(id_user, id_visited){
+    await db.query(`
+        DELETE FROM follows WHERE "followedId" = $1 AND "followerId" = $2;   
+    `, [id_visited, id_user]);
+}

@@ -2,18 +2,6 @@ import urlMetadata from "url-metadata";
 import { createPostDB, deletePostDB, editPostDB, getAllPostsDB, getAllPostsRefreshDB, getPostById, getPostsByIdUser, likePostDB, trendingDB, unlikePostDb } from "../repositories/post.repository.js";
 import { getFollower } from "../repositories/user.repository.js";
 import getMetaData from "metadata-scraper";
-import {
-  createPostDB,
-  deletePostDB,
-  editPostDB,
-  getAllPostsDB,
-  getPostById,
-  getPostsByIdUser,
-  likePostDB,
-  trendingDB,
-  unlikePostDb,
-} from "../repositories/post.repository.js";
-
 
 export async function createPost(req, res) {
   const { user_id } = res.locals;
