@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
 import {v4 as uuid } from 'uuid'
-import { createSession, createUser, getUserByEmail, getUserByUsernameDB } from '../repositories/user.repository.js'
+import { createSession, createUser, followDB, getUserByEmail, getUserByUsernameDB, isFollowerDB, unfollowDB } from '../repositories/user.repository.js'
 
 export async function createSignUp(req, res) {
   const { email, password, username, picture } = req.body
@@ -61,4 +61,49 @@ export async function getUserByUsername(req, res){
     res.status(500).send(err.message)
   }
 
+}
+
+export async function isFollower(req, res){
+  const { user_id } = res.locals;
+  const { idFollwed } = req.params;
+  let follow = false;
+
+  try {
+    const isFollower = await isFollowerDB(user_id, idFollwed);
+    if(isFollower.rowCount !== 0) follow = true;
+
+    res.send({isFollower: follow});
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+}
+
+export async function follow(req, res){
+  const { idFollwed } = req.params;
+  const { user_id } = res.locals;
+
+  try {
+    await followDB(user_id, idFollwed);
+    res.sendStatus(201);
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+}
+
+export async function unfollow(req, res){
+  const { idFollwed } = req.params;
+  const { user_id } = res.locals;
+
+  try {
+    await unfollowDB(user_id, idFollwed);
+    res.sendStatus(200);
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 }
